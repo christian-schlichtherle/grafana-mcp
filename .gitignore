@@ -1,0 +1,9 @@
+*.egg-info
+*.py[oc]
+.venv
+/.claude
+/CLAUDE.local.md
+__pycache__/
+build/
+dist/
+wheels/

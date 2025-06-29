@@ -1,0 +1,10 @@
+[project]
+name = "grafana-mcp"
+version = "0.1.0"
+description = "An MCP server for CRUD operations on Grafana dashboards which are protected with labels."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.10.1",
+]

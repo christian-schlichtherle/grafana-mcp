@@ -1,0 +1,343 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This repository provides a fully implemented MCP (Model Context Protocol) server for CRUD operations on Grafana dashboards with label-based protection. The MCP server:
+
+- Labels created dashboards to mark itself as the origin
+- Only allows updates/deletes on dashboards with matching labels  
+- Provides unrestricted read access by default to allow copying existing dashboards
+- Supports folder-based access restrictions (defaults to root folder `/`)
+- Supports multi-cluster Grafana configurations
+- Uses FastMCP framework for MCP tool implementation
+
+## Dependencies and Environment
+
+The project uses Python 3.11+ with these key dependencies:
+- `httpx>=0.28.1` - HTTP client for Grafana API calls
+- `mcp[cli]>=1.10.1` - MCP server framework
+
+Dependency management is handled by `uv` (based on presence of `uv.lock`).
+
+## Configuration
+
+The MCP server is configured via environment variables:
+
+- `GRAFANA_CLUSTERS` - Space-separated key=value pairs defining cluster URLs
+- `GRAFANA_TOKENS` - Space-separated key=value pairs defining cluster API tokens (optional)
+- `GRAFANA_DEFAULT_CLUSTER` - Default cluster name (defaults to first cluster)
+- `GRAFANA_LABELS` - Space-separated list of labels for dashboard protection (defaults to "MCP")
+- `GRAFANA_FOLDER` - Folder path restriction for operations (defaults to "/")
+
+Examples:
+```bash
+# Local development without authentication
+export GRAFANA_CLUSTERS="localhost=http://localhost:3000"
+# No GRAFANA_TOKENS needed
+
+# Mixed environment (local without auth, prod with auth)
+export GRAFANA_CLUSTERS="localhost=http://localhost:3000 prod=https://grafana.prod.com"
+export GRAFANA_TOKENS="prod=glsa_def456"  # Only prod needs token
+
+# All clusters with authentication
+export GRAFANA_CLUSTERS="dev=https://grafana.dev.com prod=https://grafana.prod.com"
+export GRAFANA_TOKENS="dev=glsa_abc123 prod=glsa_def456"
+```
+
+## Development Commands
+
+- Install dependencies: `uv sync` or `pip install -e .`
+- Run the MCP server: `python main.py`
+- The server validates configuration at startup and lists all available tools
+
+## Architecture
+
+### Code Structure
+```
+grafana_mcp/
+├── __init__.py
+├── config.py              # Environment variable parsing and validation
+├── client.py              # HTTP client for Grafana API operations
+├── tools/
+│   ├── __init__.py
+│   ├── base.py            # DRY utilities and decorators for tools
+│   ├── clusters.py        # Cluster management tools
+│   ├── dashboards.py      # Dashboard CRUD tools
+│   ├── folders.py         # Folder management tools (NEW)
+│   └── datasources.py     # Datasource tools
+└── security/
+    ├── __init__.py
+    └── validators.py      # Label and folder validation
+```
+
+### Available MCP Tools
+
+**Cluster Management:**
+- `list_clusters()` - Returns dict of cluster_name -> URL
+- `get_cluster()` - Returns current active cluster name
+- `set_cluster(cluster: str)` - Switch active cluster
+
+**Search Operations:**
+- `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders
+
+**Dashboard Operations:**
+- `create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "")` - Create with auto-labels
+- `read_dashboard(cluster: str, dashboard_uid: str)` - Read any dashboard
+- `update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict)` - Update (requires labels)
+- `delete_dashboard(cluster: str, dashboard_uid: str)` - Delete (requires labels)
+- `copy_dashboard(source_cluster: str, source_uid: str, new_title: str, *, target_cluster: str = "", folder_uid: str = "", target_uid: str = "")` - Copy with smart UID handling and auto-overwrite
+
+**Folder Management:**
+- `list_folders(cluster: str, *, parent_uid: str = "")` - List folders, optionally under parent
+- `get_folder(cluster: str, folder_uid: str)` - Get detailed folder information with hierarchy
+- `create_folder(cluster: str, title: str, *, parent_uid: str = "")` - Create folder, optionally as subfolder
+- `update_folder(cluster: str, folder_uid: str, title: str, *, parent_uid: str = "")` - Update/rename/move folder
+- `delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False)` - Delete folder
+
+**Datasource Operations:**
+- `list_datasources(cluster: str)` - List all datasources with metadata
+
+**Dashboard Testing and Validation:**
+- `inspect_dashboard(cluster: str, dashboard_uid: str)` - Detailed structural analysis of dashboard panels, variables, and datasources
+- `validate_dashboard(cluster: str, dashboard_uid: str)` - Schema validation and best practices checking
+- `snapshot_dashboard(cluster: str, dashboard_uid: str, *, snapshot_name: str = "", expires_hours: int = 24, time_from: str = "now-6h", time_to: str = "now")` - Create snapshot with current data for inspection
+- `compare_dashboards(cluster: str, dashboard_uid_a: str, dashboard_uid_b: str, *, compare_cluster_b: str = "")` - Compare two dashboards and show differences
+- `test_panel_render(cluster: str, dashboard_uid: str, panel_id: int, *, width: int = 1000, height: int = 500, time_from: str = "now-6h", time_to: str = "now", save_to_file: str = "")` - Render panel as PNG for visual validation
+
+### Key Implementation Details
+
+1. **DRY Architecture**: Base utilities in `tools/base.py` eliminate code duplication:
+   - `@grafana_tool` decorator handles cluster validation, client creation, and error handling
+   - `@cluster_only_tool` for tools that only need cluster validation
+   - Consistent error handling and HTTP client management across all tools
+
+2. **MCP Parameter Handling**: Uses falsy defaults (`""`, `[]`, `False`) instead of `None` for optional parameters to work with MCP protocol
+
+3. **Named Parameters**: All tools except cluster parameter use named parameters (with `*` separator)
+
+4. **Folder Hierarchy Support**: Complete folder management with hierarchical structure:
+   - Navigate parent-child folder relationships
+   - Create subfolders and move folders between parents
+   - Explore folder tree structure for AI agent navigation
+
+5. **Enhanced Search**: Generic `search()` tool:
+   - Searches both dashboards and folders with type filtering
+
+6. **Cross-Cluster Dashboard Copying**: Advanced `copy_dashboard()` tool with intelligent UID handling and auto-overwrite:
+   - **Same-cluster copying**: Generates new UID automatically (unless explicit `target_uid` provided)
+   - **Cross-cluster copying**: Preserves source UID by default (for consistent deployment)
+   - **Auto-overwrite**: When target dashboard exists, validates security labels and updates automatically
+   - **Explicit control**: Optional `target_uid` parameter overrides all default behavior
+   - **Independent operation**: No dependency on current active cluster state
+   - **Folder inheritance**: Automatically inherits source folder unless overridden
+
+7. **Security Model**: 
+   - Auto-adds protection labels to created/copied dashboards
+   - Validates labels before allowing updates/deletes
+   - Prevents dashboard overwrites during creation
+
+8. **Error Handling**: Comprehensive validation with helpful error messages, including HTTP status code translation
+
+9. **HTTP Client**: Context manager pattern with proper connection management
+
+### Authentication
+
+- **Optional Authentication**: Clusters can run with or without authentication
+- **Service Account Tokens**: For authenticated clusters, uses Bearer tokens via `GRAFANA_TOKENS`
+- **Local Development**: Supports unauthenticated Grafana instances (common in Docker containers)
+- **Mixed Environments**: Can have both authenticated and unauthenticated clusters configured simultaneously
+- **Automatic Detection**: HTTP client automatically includes/excludes Authorization header based on token presence
+
+### Security Features
+
+- Label-based access control for modifications
+- Folder-based operation restrictions
+- UID collision prevention
+- Automatic protection label injection
+- Validation of dashboard permissions before operations
+
+## Dashboard Testing and Validation Workflow
+
+The MCP server provides comprehensive tools for testing and validating Grafana dashboards. This workflow addresses the visibility problem when creating or modifying dashboards programmatically.
+
+### Testing Workflow Phases
+
+#### 1. Development Phase - Structural Analysis
+Use `inspect_dashboard` to understand dashboard structure before making changes:
+
+```python
+# Get detailed structural analysis
+inspection = inspect_dashboard("fret-dev", "dashboard-uid")
+
+# Review:
+# - Panel configurations and datasources
+# - Template variables and their types  
+# - Grid positions and layout
+# - Query structures (without execution)
+# - Validation issues (missing datasources, overlaps)
+```
+
+**Benefits:**
+- Understand existing dashboard without guessing
+- Identify all datasources and variables used
+- Spot layout and configuration issues
+- Get panel-by-panel breakdown
+
+#### 2. Validation Phase - Schema Compliance  
+Run `validate_dashboard` for comprehensive validation:
+
+```python
+# Validate against schema and best practices
+validation = validate_dashboard("fret-dev", "dashboard-uid")
+
+# Check validation_status: "PASS" or "FAIL"
+# Review issues, warnings, and info messages
+# Fix any schema violations before deployment
+```
+
+**Validation Categories:**
+- **Schema**: Required fields, UID format, title length
+- **Layout**: Grid positions, overlapping panels, dimensions
+- **Panels**: IDs, types, datasource references
+- **Queries**: RefIDs, query structure
+- **Variables**: Names, types, duplicates
+- **Performance**: Refresh rates, panel count
+- **Best Practices**: Grafana recommendations
+
+#### 3. Data Verification - Snapshot Creation
+Create snapshots to see actual data without executing queries directly:
+
+```python
+# Create snapshot with current data for last 30 days
+snapshot = snapshot_dashboard(
+    "fret-prod", 
+    "dashboard-uid",
+    snapshot_name="Transaction Analysis - Test Data",
+    expires_hours=24,
+    time_from="now-30d",
+    time_to="now"
+)
+
+# View snapshot at: snapshot["url"] 
+# Inspect actual query results and data
+# Verify visualizations match expectations
+```
+
+**Benefits:**
+- See real data without Druid MCP dependency
+- Respects Grafana's variable interpolation
+- Uses correct cluster authentication
+- Creates shareable dashboard states
+- Perfect for debugging data issues
+
+#### 4. Visual Quality Assurance
+Use `test_panel_render` for visual validation:
+
+```python
+# Render individual panels as PNG images
+render_result = test_panel_render(
+    "fret-prod", 
+    "dashboard-uid", 
+    panel_id=15,
+    width=1200,
+    height=600,
+    time_from="now-7d",
+    save_to_file="/tmp/revenue_chart.png"
+)
+
+# Review rendered image to verify:
+# - Data visualization correctness
+# - Chart formatting and colors
+# - Legends and labels
+# - Time series accuracy
+```
+
+#### 5. Version Control - Dashboard Comparison
+Use `compare_dashboards` for change tracking:
+
+```python
+# Compare dashboard versions across environments
+comparison = compare_dashboards(
+    "fret-dev", 
+    "dashboard-uid",
+    "dashboard-uid", 
+    compare_cluster_b="fret-prod"
+)
+
+# Review differences before deployment:
+# - Panel changes and additions
+# - Query modifications  
+# - Variable updates
+# - Layout adjustments
+```
+
+### Recommended Testing Patterns
+
+#### Before Dashboard Creation:
+1. `inspect_dashboard` on similar existing dashboards for reference
+2. `validate_dashboard` on template/base dashboards
+3. `list_datasources` to verify available data sources
+
+#### During Development:
+1. `validate_dashboard` after each major change
+2. `snapshot_dashboard` to verify data and queries
+3. `test_panel_render` for visual verification of key panels
+
+#### Before Deployment:
+1. `validate_dashboard` must pass (status = "PASS")
+2. `compare_dashboards` to review all changes
+3. `snapshot_dashboard` for final data verification
+4. `copy_dashboard` with auto-overwrite for deployment
+
+#### Troubleshooting Data Issues:
+1. `inspect_dashboard` to check datasource references
+2. `snapshot_dashboard` with different time ranges to isolate issues
+3. `test_panel_render` to visualize query results
+4. Use browser DevTools on snapshot URL for detailed query inspection
+
+### Integration with CI/CD
+
+These tools can be integrated into automated pipelines:
+
+```bash
+# Validation pipeline
+python -c "
+result = validate_dashboard('fret-dev', 'dashboard-uid')
+if result['validation_status'] != 'PASS':
+    print('Validation failed:', result['summary'])
+    exit(1)
+"
+
+# Comparison pipeline  
+python -c "
+diff = compare_dashboards('fret-dev', 'old-uid', 'new-uid')
+if diff['summary']['total_differences'] > 0:
+    print('Changes detected:', diff['summary'])
+"
+```
+
+### Best Practices
+
+1. **Always validate before deployment** - Use `validate_dashboard` to catch issues early
+2. **Create snapshots for important states** - Document known-good dashboard configurations  
+3. **Compare before overwriting** - Use `compare_dashboards` to understand changes
+4. **Test with realistic time ranges** - Use actual date ranges that match production usage
+5. **Save rendered panels for documentation** - Keep visual records of dashboard states
+6. **Use meaningful snapshot names** - Include purpose, time range, and data context
+7. **Snapshot expiration defaults** - Snapshots expire after 24 hours by default to prevent accumulation. Use `expires_hours=0` for permanent snapshots when needed
+
+### Limitations and Workarounds
+
+- **Snapshot API limitations**: Basic Grafana snapshots may not include all data. For comprehensive data snapshots, consider using external tools like `grafana-snapshots-tool`
+- **Render API dependencies**: Panel rendering requires Grafana's image renderer to be installed
+- **Variable interpolation**: Snapshots show actual interpolated variables, but inspection shows raw variable references
+- **Cross-cluster authentication**: Ensure all clusters have proper authentication configured
+
+This comprehensive testing workflow provides the visibility and validation needed for confident dashboard development and deployment while respecting Grafana's architecture and security model.
+
+## Development Principles
+
+- Never commit without asking for permission.
+- Never mention yourself, Claude, in git commit messages.
