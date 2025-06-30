@@ -1,7 +1,7 @@
 [project]
 name = "grafana-mcp"
 version = "0.1.0"
-description = "An MCP server for CRUD operations on Grafana dashboards which are protected with labels."
+description = "An MCP server for the comprehensive discovery, editing, and testing of dashboards and folders in one or more Grafana clusters."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
