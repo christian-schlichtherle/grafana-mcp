@@ -31,8 +31,7 @@ Discover and explore Grafana resources across clusters.
 
 #### Cluster Management
 - `list_clusters()` - List all configured Grafana clusters with their URLs
-- `get_cluster()` - Get the name of the currently active cluster
-- `set_cluster(cluster: str)` - Switch active cluster
+- `check_cluster_health(cluster: str)` - Check health and connectivity of a Grafana cluster
 
 #### Search Operations
 - `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders with comprehensive filtering options
@@ -88,9 +87,6 @@ export GRAFANA_CLUSTERS="localhost=http://localhost:3000 dev=https://grafana.dev
 # Cluster API tokens (space-separated key=value pairs, optional)
 # Only required for clusters that need authentication
 export GRAFANA_TOKENS="dev=glsa_yyy prod=glsa_zzz"  # Note: localhost has no token (unauthenticated)
-
-# Default cluster (optional, defaults to first cluster in GRAFANA_CLUSTERS)
-export GRAFANA_DEFAULT_CLUSTER=localhost
 
 # Protection labels (space-separated, defaults to "MCP")
 export GRAFANA_LABELS="MCP Claude"

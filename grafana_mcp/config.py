@@ -10,10 +10,8 @@ class GrafanaConfig:
     def __init__(self):
         self._clusters: Dict[str, str] = {}
         self._tokens: Dict[str, str] = {}
-        self._default_cluster: str = ""
         self._labels: List[str] = []
         self._folder: str = ""
-        self._current_cluster: str = ""
 
         self._load_config()
 
@@ -30,17 +28,7 @@ class GrafanaConfig:
         # Note: We no longer require all clusters to have tokens
         # This supports local development with unauthenticated Grafana instances
 
-        # Set default cluster
-        self._default_cluster = getenv("GRAFANA_DEFAULT_CLUSTER", "")
-        if not self._default_cluster:
-            # Use first cluster as default
-            self._default_cluster = list(self._clusters.keys())[0] if self._clusters else "localhost"
-
-        if self._default_cluster not in self._clusters:
-            raise ValueError(f"Default cluster '{self._default_cluster}' not found in GRAFANA_CLUSTERS")
-
-        # Set current cluster to default
-        self._current_cluster = self._default_cluster
+        # Stateless server - no default or current cluster concept
 
         # Parse labels
         labels_env = getenv("GRAFANA_LABELS", "MCP")
@@ -73,15 +61,6 @@ class GrafanaConfig:
         """Get all configured clusters."""
         return self._clusters.copy()
 
-    @property
-    def current_cluster(self) -> str:
-        """Get current active cluster."""
-        return self._current_cluster
-
-    @property
-    def default_cluster(self) -> str:
-        """Get default cluster."""
-        return self._default_cluster
 
     @property
     def labels(self) -> List[str]:
@@ -110,11 +89,6 @@ class GrafanaConfig:
         """Check if cluster has authentication configured."""
         return cluster in self._tokens and bool(self._tokens[cluster])
 
-    def set_current_cluster(self, cluster: str) -> None:
-        """Set the current active cluster."""
-        if cluster not in self._clusters:
-            raise ValueError(f"Unknown cluster: {cluster}")
-        self._current_cluster = cluster
 
     def validate_cluster(self, cluster: str) -> None:
         """Validate that a cluster exists."""

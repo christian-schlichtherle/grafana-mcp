@@ -27,7 +27,6 @@ The MCP server is configured via environment variables:
 
 - `GRAFANA_CLUSTERS` - Space-separated key=value pairs defining cluster URLs
 - `GRAFANA_TOKENS` - Space-separated key=value pairs defining cluster API tokens (optional)
-- `GRAFANA_DEFAULT_CLUSTER` - Default cluster name (defaults to first cluster)
 - `GRAFANA_LABELS` - Space-separated list of labels for dashboard protection (defaults to "MCP")
 - `GRAFANA_FOLDER` - Folder path restriction for operations (defaults to "/")
 
@@ -80,8 +79,7 @@ Tools for discovering and exploring Grafana resources across clusters.
 
 **Cluster Management:**
 - `list_clusters()` - List all configured Grafana clusters with their URLs
-- `get_cluster()` - Get the name of the currently active cluster
-- `set_cluster(cluster: str)` - Set the active Grafana cluster
+- `check_cluster_health(cluster: str)` - Check health and connectivity of a Grafana cluster
 
 **Search Operations:**
 - `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders with comprehensive filtering options
@@ -131,34 +129,39 @@ Tools for validating, testing, and analyzing dashboard quality and data accuracy
    - `@cluster_only_tool` for tools that only need cluster validation
    - Consistent error handling and HTTP client management across all tools
 
-2. **MCP Parameter Handling**: Uses falsy defaults (`""`, `[]`, `False`) instead of `None` for optional parameters to work with MCP protocol
+2. **Stateless Architecture**: Server maintains no internal state for optimal remote HTTP operation:
+   - All tools require explicit cluster parameter
+   - No current/active cluster concept - perfect for multi-client environments
+   - AI agents maintain cluster context within conversation scope
 
-3. **Named Parameters**: All tools except cluster parameter use named parameters (with `*` separator)
+3. **MCP Parameter Handling**: Uses falsy defaults (`""`, `[]`, `False`) instead of `None` for optional parameters to work with MCP protocol
 
-4. **Folder Hierarchy Support**: Complete folder management with hierarchical structure:
+4. **Named Parameters**: All tools except cluster parameter use named parameters (with `*` separator)
+
+5. **Folder Hierarchy Support**: Complete folder management with hierarchical structure:
    - Navigate parent-child folder relationships
    - Create subfolders and move folders between parents
    - Explore folder tree structure for AI agent navigation
 
-5. **Enhanced Search**: Generic `search()` tool:
+6. **Enhanced Search**: Generic `search()` tool:
    - Searches both dashboards and folders with type filtering
 
-6. **Cross-Cluster Dashboard Copying**: Advanced `copy_dashboard()` tool with intelligent UID handling and auto-overwrite:
+7. **Cross-Cluster Dashboard Copying**: Advanced `copy_dashboard()` tool with intelligent UID handling and auto-overwrite:
    - **Same-cluster copying**: Generates new UID automatically (unless explicit `target_uid` provided)
    - **Cross-cluster copying**: Preserves source UID by default (for consistent deployment)
    - **Auto-overwrite**: When target dashboard exists, validates security labels and updates automatically
    - **Explicit control**: Optional `target_uid` parameter overrides all default behavior
-   - **Independent operation**: No dependency on current active cluster state
+   - **Stateless operation**: All operations require explicit cluster parameter
    - **Folder inheritance**: Automatically inherits source folder unless overridden
 
-7. **Security Model**: 
+8. **Security Model**: 
    - Auto-adds protection labels to created/copied dashboards
    - Validates labels before allowing updates/deletes
    - Prevents dashboard overwrites during creation
 
-8. **Error Handling**: Comprehensive validation with helpful error messages, including HTTP status code translation
+9. **Error Handling**: Comprehensive validation with helpful error messages, including HTTP status code translation
 
-9. **HTTP Client**: Context manager pattern with proper connection management
+10. **HTTP Client**: Context manager pattern with proper connection management
 
 ### Authentication
 

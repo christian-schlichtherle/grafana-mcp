@@ -1,8 +1,8 @@
 """Cluster management tools for Grafana MCP server."""
 
-from typing import Dict
+from typing import Dict, Any
 
-from .base import cluster_only_tool
+from .base import grafana_tool, get_current_client
 from ..config import config
 
 
@@ -15,27 +15,44 @@ def list_clusters() -> Dict[str, str]:
     return config.clusters
 
 
-def get_cluster() -> str:
-    """Get the current active Grafana cluster.
-    
-    Returns:
-        The name of the currently active cluster.
-    """
-    return config.current_cluster
-
-
-@cluster_only_tool
-def set_cluster(cluster: str) -> str:
-    """Set the active Grafana cluster.
+@grafana_tool
+def check_cluster_health(cluster: str) -> Dict[str, Any]:
+    """Check the health and connectivity of a Grafana cluster.
     
     Args:
-        cluster: The name of the cluster to set as active.
+        cluster: Target cluster name to check.
         
     Returns:
-        Confirmation message with the new active cluster.
+        Dictionary containing health status, version info, and connectivity details.
         
     Raises:
-        ValueError: If the cluster name is not configured.
+        ValueError: If cluster is invalid or unreachable.
     """
-    config.set_current_cluster(cluster)
-    return f"Active cluster set to: {cluster}"
+    client = get_current_client()
+    
+    try:
+        # Get health status
+        health_info = client.health_check()
+        
+        # Try to get additional cluster info
+        try:
+            # Get datasources to verify API functionality
+            datasources = client.list_datasources()
+            datasource_count = len(datasources)
+        except Exception:
+            datasource_count = "unavailable"
+        
+        return {
+            "cluster": cluster,
+            "status": "healthy",
+            "health_info": health_info,
+            "datasource_count": datasource_count,
+            "connectivity": "ok"
+        }
+    except Exception as e:
+        return {
+            "cluster": cluster,
+            "status": "unhealthy", 
+            "connectivity": "failed",
+            "error": str(e)
+        }

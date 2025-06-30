@@ -1,17 +1,15 @@
 """Main entry point for Grafana MCP server."""
 
-import asyncio
 from mcp.server.fastmcp import FastMCP
-from grafana_mcp.config import config  # Validate configuration at startup
+
 from grafana_mcp.tools import clusters, dashboards, datasources, folders
 
 # Create the MCP server
-mcp = FastMCP("Grafana MCP Server")
+mcp = FastMCP("Grafana")
 
 # Register cluster management tools
 mcp.tool()(clusters.list_clusters)
-mcp.tool()(clusters.get_cluster)
-mcp.tool()(clusters.set_cluster)
+mcp.tool()(clusters.check_cluster_health)
 
 # Register dashboard tools
 mcp.tool()(dashboards.create_dashboard)
@@ -37,7 +35,3 @@ mcp.tool()(folders.delete_folder)
 
 # Register datasource tools
 mcp.tool()(datasources.list_datasources)
-
-
-if __name__ == "__main__":
-    mcp.run()
