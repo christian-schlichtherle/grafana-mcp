@@ -74,37 +74,55 @@ grafana_mcp/
 
 ### Available MCP Tools
 
+#### Discovery
+
+Tools for discovering and exploring Grafana resources across clusters.
+
 **Cluster Management:**
-- `list_clusters()` - Returns dict of cluster_name -> URL
-- `get_cluster()` - Returns current active cluster name
-- `set_cluster(cluster: str)` - Switch active cluster
+- `list_clusters()` - List all configured Grafana clusters with their URLs
+- `get_cluster()` - Get the name of the currently active cluster
+- `set_cluster(cluster: str)` - Set the active Grafana cluster
 
 **Search Operations:**
-- `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders
+- `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders with comprehensive filtering options
 
-**Dashboard Operations:**
-- `create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "")` - Create with auto-labels
-- `read_dashboard(cluster: str, dashboard_uid: str)` - Read any dashboard
-- `update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict)` - Update (requires labels)
-- `delete_dashboard(cluster: str, dashboard_uid: str)` - Delete (requires labels)
-- `copy_dashboard(source_cluster: str, source_uid: str, new_title: str, *, target_cluster: str = "", folder_uid: str = "", target_uid: str = "")` - Copy with smart UID handling and auto-overwrite
+**Dashboard Discovery:**
+- `read_dashboard(cluster: str, dashboard_uid: str)` - Read dashboard configuration and metadata (unrestricted access)
+- `inspect_dashboard(cluster: str, dashboard_uid: str)` - Detailed structural analysis including panels, datasources, variables, layout, and validation issues
+
+**Folder Discovery:**
+- `list_folders(cluster: str, *, parent_uid: str = "")` - List folders with metadata, optionally under a parent folder
+- `get_folder(cluster: str, folder_uid: str)` - Get detailed folder information including hierarchy and permissions
+
+**Datasource Discovery:**
+- `list_datasources(cluster: str)` - List all datasources with name, type, UID, and other metadata
+
+#### Editing
+
+Tools for creating, modifying, and managing Grafana resources with label-based security controls.
+
+**Dashboard Management:**
+- `create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "")` - Create dashboard with automatic protection labels and folder assignment
+- `update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict)` - Update existing dashboard (requires protection labels)
+- `delete_dashboard(cluster: str, dashboard_uid: str)` - Delete dashboard (requires protection labels)
+- `copy_dashboard(source_cluster: str, source_uid: str, new_title: str, *, target_cluster: str = "", folder_uid: str = "", target_uid: str = "")` - Copy dashboard with intelligent UID handling, auto-overwrite, and folder preservation
 
 **Folder Management:**
-- `list_folders(cluster: str, *, parent_uid: str = "")` - List folders, optionally under parent
-- `get_folder(cluster: str, folder_uid: str)` - Get detailed folder information with hierarchy
-- `create_folder(cluster: str, title: str, *, parent_uid: str = "")` - Create folder, optionally as subfolder
-- `update_folder(cluster: str, folder_uid: str, title: str, *, parent_uid: str = "")` - Update/rename/move folder
-- `delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False)` - Delete folder
+- `create_folder(cluster: str, title: str, *, parent_uid: str = "")` - Create folder, optionally as subfolder under parent
+- `update_folder(cluster: str, folder_uid: str, title: str, *, parent_uid: str = "")` - Update/rename folder and optionally move to different parent
+- `delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False)` - Delete folder with optional alert rule cleanup
 
-**Datasource Operations:**
-- `list_datasources(cluster: str)` - List all datasources with metadata
+#### Feedback
 
-**Dashboard Testing and Validation:**
-- `inspect_dashboard(cluster: str, dashboard_uid: str)` - Detailed structural analysis of dashboard panels, variables, and datasources
-- `validate_dashboard(cluster: str, dashboard_uid: str)` - Schema validation and best practices checking
-- `snapshot_dashboard(cluster: str, dashboard_uid: str, *, snapshot_name: str = "", expires_hours: int = 24, time_from: str = "now-6h", time_to: str = "now")` - Create snapshot with current data for inspection
-- `compare_dashboards(cluster: str, dashboard_uid_a: str, dashboard_uid_b: str, *, compare_cluster_b: str = "")` - Compare two dashboards and show differences
-- `test_panel_render(cluster: str, dashboard_uid: str, panel_id: int, *, width: int = 1000, height: int = 500, time_from: str = "now-6h", time_to: str = "now", save_to_file: str = "")` - Render panel as PNG for visual validation
+Tools for validating, testing, and analyzing dashboard quality and data accuracy.
+
+**Validation & Quality Assurance:**
+- `validate_dashboard(cluster: str, dashboard_uid: str)` - Comprehensive schema validation and best practices checking with pass/fail status
+- `compare_dashboards(cluster: str, dashboard_uid_a: str, dashboard_uid_b: str, *, compare_cluster_b: str = "")` - Compare two dashboards showing structural and configuration differences
+
+**Data Verification & Testing:**
+- `snapshot_dashboard(cluster: str, dashboard_uid: str, *, snapshot_name: str = "", expires_hours: int = 24, time_from: str = "now-6h", time_to: str = "now")` - Create snapshot with current data for inspection and testing (expires after 24 hours by default)
+- `test_panel_render(cluster: str, dashboard_uid: str, panel_id: int, *, width: int = 1000, height: int = 500, time_from: str = "now-6h", time_to: str = "now", save_to_file: str = "")` - Render panel as PNG for visual validation and quality assurance
 
 ### Key Implementation Details
 

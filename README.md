@@ -25,30 +25,55 @@ python main.py
 
 ## Available MCP Tools
 
-### Cluster Management
-- `list_clusters()` - List all configured Grafana clusters
-- `get_cluster()` - Get currently active cluster
-- `set_cluster(cluster)` - Switch active cluster
+### Discovery
 
-### Search Operations
-- `search(cluster, *, query="", tags=[], starred=False, folder_uids=[], dashboard_uids=[], dashboard_ids=[], type="", limit=1000, page=1)` - Search dashboards and folders with comprehensive filtering
+Discover and explore Grafana resources across clusters.
 
-### Dashboard Operations
-- `create_dashboard(cluster, dashboard_json, *, folder_uid="")` - Create new dashboard with protection labels
-- `read_dashboard(cluster, dashboard_uid)` - Read dashboard by UID (no restrictions)
-- `update_dashboard(cluster, dashboard_uid, dashboard_json)` - Update dashboard (requires protection labels)
-- `delete_dashboard(cluster, dashboard_uid)` - Delete dashboard (requires protection labels)
-- `copy_dashboard(cluster, source_uid, new_title, *, folder_uid="")` - Copy dashboard with new protection labels
+#### Cluster Management
+- `list_clusters()` - List all configured Grafana clusters with their URLs
+- `get_cluster()` - Get the name of the currently active cluster
+- `set_cluster(cluster: str)` - Switch active cluster
 
-### Folder Management
-- `list_folders(cluster, *, parent_uid="")` - List folders, optionally under a parent
-- `get_folder(cluster, folder_uid)` - Get detailed folder information
-- `create_folder(cluster, title, *, parent_uid="")` - Create new folder, optionally as subfolder
-- `update_folder(cluster, folder_uid, title, *, parent_uid="")` - Update/rename/move folder
-- `delete_folder(cluster, folder_uid, *, force_delete_rules=False)` - Delete folder
+#### Search Operations
+- `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders with comprehensive filtering options
 
-### Datasource Operations
-- `list_datasources(cluster)` - List all datasources in cluster
+#### Dashboard Discovery
+- `read_dashboard(cluster: str, dashboard_uid: str)` - Read any dashboard configuration and metadata (no restrictions)
+- `inspect_dashboard(cluster: str, dashboard_uid: str)` - Detailed structural analysis of dashboard panels, variables, datasources, and layout
+
+#### Folder Discovery
+- `list_folders(cluster: str, *, parent_uid: str = "")` - List folders, optionally under a parent folder
+- `get_folder(cluster: str, folder_uid: str)` - Get detailed folder information including hierarchy and permissions
+
+#### Datasource Discovery
+- `list_datasources(cluster: str)` - List all datasources in cluster with name, type, UID, and metadata
+
+### Editing
+
+Create, modify, and manage Grafana resources with security controls.
+
+#### Dashboard Management
+- `create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "")` - Create new dashboard with automatic protection labels
+- `update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict)` - Update existing dashboard (requires protection labels)
+- `delete_dashboard(cluster: str, dashboard_uid: str)` - Delete dashboard (requires protection labels)
+- `copy_dashboard(source_cluster: str, source_uid: str, new_title: str, *, target_cluster: str = "", folder_uid: str = "", target_uid: str = "")` - Copy dashboard with intelligent UID handling and auto-overwrite capabilities
+
+#### Folder Management
+- `create_folder(cluster: str, title: str, *, parent_uid: str = "")` - Create new folder, optionally as subfolder
+- `update_folder(cluster: str, folder_uid: str, title: str, *, parent_uid: str = "")` - Update/rename/move folder to different parent
+- `delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False)` - Delete folder with optional alert rule cleanup
+
+### Feedback
+
+Validate, test, and analyze dashboard quality and data accuracy.
+
+#### Validation & Quality Assurance
+- `validate_dashboard(cluster: str, dashboard_uid: str)` - Comprehensive schema validation and best practices checking
+- `compare_dashboards(cluster: str, dashboard_uid_a: str, dashboard_uid_b: str, *, compare_cluster_b: str = "")` - Compare two dashboards showing structural and configuration differences
+
+#### Data Verification & Testing
+- `snapshot_dashboard(cluster: str, dashboard_uid: str, *, snapshot_name: str = "", expires_hours: int = 24, time_from: str = "now-6h", time_to: str = "now")` - Create snapshot with current data for inspection and testing
+- `test_panel_render(cluster: str, dashboard_uid: str, panel_id: int, *, width: int = 1000, height: int = 500, time_from: str = "now-6h", time_to: str = "now", save_to_file: str = "")` - Render panel as PNG for visual validation
 
 ## Configuration
 
