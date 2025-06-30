@@ -112,8 +112,3 @@ def handle_grafana_errors(func: Callable[P, T]) -> Callable[P, T]:
 def grafana_tool(func: Callable[P, T]) -> Callable[P, T]:
     """Convenience decorator that combines client validation and error handling."""
     return handle_grafana_errors(with_validated_client(func))
-
-
-def cluster_only_tool(func: Callable[P, T]) -> Callable[P, T]:
-    """Convenience decorator for tools that only need cluster validation."""
-    return handle_grafana_errors(validate_cluster_only(func))

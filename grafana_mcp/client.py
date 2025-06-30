@@ -29,7 +29,7 @@ class GrafanaClient:
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
 
-        # Set up HTTP client
+        # Set up the HTTP client
         self.client = httpx.Client(
             base_url=self.base_url,
             headers=headers,
