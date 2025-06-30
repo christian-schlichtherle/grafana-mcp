@@ -1,6 +1,8 @@
 # Grafana MCP
 
-This repository provides an MCP (Model Context Protocol) server for CRUD operations on Grafana dashboards which are protected with labels.
+This repository provides an MCP (Model Context Protocol) server for comprehensive discovery, editing and feedback
+operations for Grafana dashboards.
+Its [security model](#security-model) is based on labels and folders.
 
 ## Quick Start
 
