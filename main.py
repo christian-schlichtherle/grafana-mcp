@@ -2,6 +2,7 @@
 
 import asyncio
 from mcp.server.fastmcp import FastMCP
+from grafana_mcp.config import config  # Validate configuration at startup
 from grafana_mcp.tools import clusters, dashboards, datasources, folders
 
 # Create the MCP server
@@ -38,23 +39,5 @@ mcp.tool()(folders.delete_folder)
 mcp.tool()(datasources.list_datasources)
 
 
-def main():
-    """Run the Grafana MCP server."""
-    try:
-        # Import config to validate configuration at startup
-        from grafana_mcp.config import config
-        print(f"Grafana MCP Server starting...")
-        print(f"Configured clusters: {', '.join(config.clusters.keys())}")
-        print(f"Default cluster: {config.default_cluster}")
-        print(f"Protection labels: {', '.join(config.labels)}")
-        print(f"Folder restriction: {config.folder}")
-        
-        # Run the server
-        mcp.run()
-    except Exception as e:
-        print(f"Failed to start Grafana MCP Server: {e}")
-        exit(1)
-
-
 if __name__ == "__main__":
-    main()
+    mcp.run()
