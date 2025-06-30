@@ -1,7 +1,7 @@
 # Grafana MCP
 
-This repository provides an MCP (Model Context Protocol) server for comprehensive discovery, editing and feedback
-operations for Grafana dashboards.
+This repository provides an MCP (Model Context Protocol) server for the comprehensive discovery, editing, and testing
+of dashboards and folders in one or more Grafana clusters.
 Its [security model](#security-model) is based on labels and folders.
 
 ## Quick Start
@@ -63,7 +63,7 @@ Create, modify, and manage Grafana resources with security controls.
 - `update_folder(cluster: str, folder_uid: str, title: str, *, parent_uid: str = "")` - Update/rename/move folder to different parent
 - `delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False)` - Delete folder with optional alert rule cleanup
 
-### Feedback
+### Testing
 
 Validate, test, and analyze dashboard quality and data accuracy.
 

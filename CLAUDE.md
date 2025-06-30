@@ -112,7 +112,7 @@ Tools for creating, modifying, and managing Grafana resources with label-based s
 - `update_folder(cluster: str, folder_uid: str, title: str, *, parent_uid: str = "")` - Update/rename folder and optionally move to different parent
 - `delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False)` - Delete folder with optional alert rule cleanup
 
-#### Feedback
+#### Testing
 
 Tools for validating, testing, and analyzing dashboard quality and data accuracy.
 
