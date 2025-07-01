@@ -1,12 +1,12 @@
 """Datasource tools for Grafana MCP server."""
 
-from typing import List, Dict, Any
+from typing import Any
 
 from .base import grafana_tool, get_current_client
 
 
 @grafana_tool
-def list_datasources(cluster: str) -> List[Dict[str, Any]]:
+def list_datasources(cluster: str) -> list[dict[str, Any]]:
     """List all datasources in a Grafana cluster.
     
     Args:

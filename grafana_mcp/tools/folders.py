@@ -1,12 +1,12 @@
 """Folder management tools for Grafana MCP server."""
 
-from typing import List, Dict, Any
+from typing import Any
 
 from .base import grafana_tool, get_current_client
 
 
 @grafana_tool
-def list_folders(cluster: str, *, parent_uid: str = "") -> List[Dict[str, Any]]:
+def list_folders(cluster: str, *, parent_uid: str = "") -> list[dict[str, Any]]:
     """List folders in a Grafana cluster, optionally under a parent folder.
     
     Args:
@@ -44,7 +44,7 @@ def list_folders(cluster: str, *, parent_uid: str = "") -> List[Dict[str, Any]]:
 
 
 @grafana_tool
-def get_folder(cluster: str, folder_uid: str) -> Dict[str, Any]:
+def get_folder(cluster: str, folder_uid: str) -> dict[str, Any]:
     """Get detailed information about a specific folder.
     
     Args:
@@ -63,7 +63,7 @@ def get_folder(cluster: str, folder_uid: str) -> Dict[str, Any]:
 
 
 @grafana_tool
-def create_folder(cluster: str, title: str, *, parent_uid: str = "") -> Dict[str, Any]:
+def create_folder(cluster: str, title: str, *, parent_uid: str = "") -> dict[str, Any]:
     """Create a new folder in Grafana.
     
     Args:
@@ -89,7 +89,7 @@ def update_folder(
         title: str,
         *,
         parent_uid: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Update an existing folder (rename or move to different parent).
     
     Args:
@@ -110,8 +110,7 @@ def update_folder(
 
 
 @grafana_tool
-def delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False) -> Dict[
-    str, Any]:
+def delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = False) -> dict[str, Any]:
     """Delete a folder from Grafana.
     
     Args:

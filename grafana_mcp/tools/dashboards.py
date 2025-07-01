@@ -1,13 +1,13 @@
 """Dashboard CRUD tools for Grafana MCP server."""
 
-from typing import Dict, List, Any
+from typing import Any
 
 from .base import grafana_tool, get_current_client, handle_grafana_errors
 from ..security.validators import SecurityValidator
 
 
 @grafana_tool
-def create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "") -> Dict[str, Any]:
+def create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "") -> dict[str, Any]:
     """Create a new Grafana dashboard with protection labels.
     
     Args:
@@ -43,7 +43,7 @@ def create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = ""
 
 
 @grafana_tool
-def read_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
+def read_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     """Read a Grafana dashboard by UID.
     
     Args:
@@ -62,7 +62,7 @@ def read_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
 
 
 @grafana_tool
-def update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict) -> Dict[str, Any]:
+def update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict) -> dict[str, Any]:
     """Update an existing Grafana dashboard.
     
     Only dashboards with required protection labels can be updated.
@@ -107,7 +107,7 @@ def update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict) -> 
 
 
 @grafana_tool
-def delete_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
+def delete_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     """Delete a Grafana dashboard.
     
     Only dashboards with required protection labels can be deleted.
@@ -148,7 +148,7 @@ def search(
         type: str = "",
         limit: int = 1000,
         page: int = 1
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Search for dashboards and folders with comprehensive filtering options.
     
     Args:
@@ -197,7 +197,7 @@ def search(
 
 
 @grafana_tool
-def inspect_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
+def inspect_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     """Inspect a Grafana dashboard structure and provide detailed analysis.
     
     Args:
@@ -378,7 +378,7 @@ def inspect_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
 
 
 @grafana_tool
-def validate_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
+def validate_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     """Validate a Grafana dashboard against schema and best practices.
     
     Args:
@@ -539,7 +539,7 @@ def validate_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
             
             # Validate variable type
             var_type = var.get("type")
-            valid_types = ["query", "custom", "constant", "datasource", "interval", "textbox", "adhoc"]
+            valid_types = {"query", "custom", "constant", "datasource", "interval", "textbox", "adhoc"}
             if var_type not in valid_types:
                 add_issue("WARNING", "variable", f"Variable '{var_name}' has unknown type: {var_type}")
     
@@ -550,7 +550,7 @@ def validate_dashboard(cluster: str, dashboard_uid: str) -> Dict[str, Any]:
     # Check refresh rate
     refresh = dashboard.get("refresh")
     if refresh:
-        if refresh in ["5s", "10s"]:
+        if refresh in {"5s", "10s"}:
             add_issue("WARNING", "performance", f"Very frequent refresh rate ({refresh}) may impact performance")
     
     # Validate annotations
@@ -582,7 +582,7 @@ def snapshot_dashboard(
     expires_hours: int = 24,
     time_from: str = "now-6h",
     time_to: str = "now"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a dashboard snapshot with current data for inspection and testing.
     
     Args:
@@ -660,7 +660,7 @@ def test_panel_render(
     time_from: str = "now-6h",
     time_to: str = "now",
     save_to_file: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Render a specific dashboard panel as PNG for visual validation.
     
     Args:
@@ -765,7 +765,7 @@ def compare_dashboards(
     dashboard_uid_b: str,
     *,
     compare_cluster_b: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compare two dashboards and show differences in structure and configuration.
     
     Args:
@@ -973,7 +973,7 @@ def copy_dashboard(
         target_cluster: str = "",
         folder_uid: str = "",
         target_uid: str = ""
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Copy an existing dashboard, creating or updating the target with protection labels.
     
     If a dashboard with the target UID already exists, it will be updated/overwritten 

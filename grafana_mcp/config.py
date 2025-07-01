@@ -1,7 +1,7 @@
 """Configuration management for Grafana MCP server."""
 
 from os import getenv
-from typing import Dict, List, Any
+from typing import Any
 
 
 def check_truthy(value: Any, message: str) -> Any:
@@ -11,7 +11,7 @@ def check_truthy(value: Any, message: str) -> Any:
     return value
 
 
-def parse_key_value_pairs(pairs: str) -> Dict[str, str]:
+def parse_key_value_pairs(pairs: str) -> dict[str, str]:
     """Parse space-separated key=value pairs."""
     return {
         k: v for k, v in (e.split("=", 1) for e in pairs.split()) if k and v
@@ -30,12 +30,12 @@ class GrafanaConfig:
         self._tokens = parse_key_value_pairs(getenv("GRAFANA_TOKENS", ""))
 
     @property
-    def clusters(self) -> Dict[str, str]:
+    def clusters(self) -> dict[str, str]:
         """Get all configured clusters."""
         return self._clusters.copy()
 
     @property
-    def labels(self) -> List[str]:
+    def labels(self) -> list[str]:
         """Get protection labels."""
         return self._labels.copy()
 

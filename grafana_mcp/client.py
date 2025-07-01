@@ -1,6 +1,6 @@
 """HTTP client for Grafana API operations."""
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 import httpx
 
@@ -18,7 +18,7 @@ class GrafanaClient:
         self.token = config.get_cluster_token(cluster)
 
         # Remove trailing slash from base URL
-        self.base_url = self.base_url.rstrip("/")
+        self.base_url = self.base_url.removesuffix("/")
 
         # Set up headers
         headers = {
@@ -48,13 +48,13 @@ class GrafanaClient:
 
     # Dashboard operations
 
-    def get_dashboard(self, uid: str) -> Dict[str, Any]:
+    def get_dashboard(self, uid: str) -> dict[str, Any]:
         """Get dashboard by UID."""
         response = self.client.get(f"/api/dashboards/uid/{uid}")
         response.raise_for_status()
         return response.json()
 
-    def create_dashboard(self, dashboard_json: Dict[str, Any], folder_uid: str = "") -> Dict[str, Any]:
+    def create_dashboard(self, dashboard_json: dict[str, Any], folder_uid: str = "") -> dict[str, Any]:
         """Create a new dashboard."""
         payload = {
             "dashboard": dashboard_json,
@@ -69,7 +69,7 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def update_dashboard(self, dashboard_json: Dict[str, Any], folder_uid: str = "") -> Dict[str, Any]:
+    def update_dashboard(self, dashboard_json: dict[str, Any], folder_uid: str = "") -> dict[str, Any]:
         """Update an existing dashboard."""
         payload = {
             "dashboard": dashboard_json,
@@ -84,7 +84,7 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def delete_dashboard(self, uid: str) -> Dict[str, Any]:
+    def delete_dashboard(self, uid: str) -> dict[str, Any]:
         """Delete dashboard by UID."""
         response = self.client.delete(f"/api/dashboards/uid/{uid}")
         response.raise_for_status()
@@ -93,15 +93,15 @@ class GrafanaClient:
     def search_dashboards(
             self,
             query: str = "",
-            tags: List[str] = None,
-            starred: Optional[bool] = None,
-            folder_uids: List[str] = None,
-            dashboard_uids: List[str] = None,
-            dashboard_ids: List[int] = None,
+            tags: list[str] = None,
+            starred: bool | None = None,
+            folder_uids: list[str] = None,
+            dashboard_uids: list[str] = None,
+            dashboard_ids: list[int] = None,
             type_filter: str = "",
             limit: int = 1000,
             page: int = 1
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Search for dashboards."""
         params = {}
 
@@ -133,7 +133,7 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def get_dashboard_tags(self) -> List[Dict[str, Any]]:
+    def get_dashboard_tags(self) -> list[dict[str, Any]]:
         """Get all dashboard tags."""
         response = self.client.get("/api/dashboards/tags")
         response.raise_for_status()
@@ -141,13 +141,13 @@ class GrafanaClient:
 
     # Datasource operations
 
-    def list_datasources(self) -> List[Dict[str, Any]]:
+    def list_datasources(self) -> list[dict[str, Any]]:
         """List all datasources."""
         response = self.client.get("/api/datasources")
         response.raise_for_status()
         return response.json()
 
-    def get_datasource(self, uid: str) -> Dict[str, Any]:
+    def get_datasource(self, uid: str) -> dict[str, Any]:
         """Get datasource by UID."""
         response = self.client.get(f"/api/datasources/uid/{uid}")
         response.raise_for_status()
@@ -155,7 +155,7 @@ class GrafanaClient:
 
     # Folder operations
 
-    def list_folders(self, parent_uid: str = "") -> List[Dict[str, Any]]:
+    def list_folders(self, parent_uid: str = "") -> list[dict[str, Any]]:
         """List all folders, optionally under a parent folder."""
         params = {}
         if parent_uid:
@@ -165,13 +165,13 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def get_folder(self, uid: str) -> Dict[str, Any]:
+    def get_folder(self, uid: str) -> dict[str, Any]:
         """Get folder by UID."""
         response = self.client.get(f"/api/folders/{uid}")
         response.raise_for_status()
         return response.json()
 
-    def create_folder(self, title: str, parent_uid: str = "") -> Dict[str, Any]:
+    def create_folder(self, title: str, parent_uid: str = "") -> dict[str, Any]:
         """Create a new folder."""
         payload = {
             "title": title
@@ -184,7 +184,7 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def update_folder(self, uid: str, title: str, parent_uid: str = "") -> Dict[str, Any]:
+    def update_folder(self, uid: str, title: str, parent_uid: str = "") -> dict[str, Any]:
         """Update an existing folder."""
         payload = {
             "title": title,
@@ -198,7 +198,7 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def delete_folder(self, uid: str, force_delete_rules: bool = False) -> Dict[str, Any]:
+    def delete_folder(self, uid: str, force_delete_rules: bool = False) -> dict[str, Any]:
         """Delete a folder."""
         params = {}
         if force_delete_rules:
@@ -210,7 +210,7 @@ class GrafanaClient:
 
     # Snapshot operations
 
-    def create_snapshot(self, dashboard_json: Dict[str, Any], name: str = "", expires: int = 0) -> Dict[str, Any]:
+    def create_snapshot(self, dashboard_json: dict[str, Any], name: str = "", expires: int = 0) -> dict[str, Any]:
         """Create a dashboard snapshot."""
         payload = {
             "dashboard": dashboard_json,
@@ -222,19 +222,19 @@ class GrafanaClient:
         response.raise_for_status()
         return response.json()
 
-    def get_snapshot(self, key: str) -> Dict[str, Any]:
+    def get_snapshot(self, key: str) -> dict[str, Any]:
         """Get snapshot by key."""
         response = self.client.get(f"/api/snapshots/{key}")
         response.raise_for_status()
         return response.json()
 
-    def list_snapshots(self) -> List[Dict[str, Any]]:
+    def list_snapshots(self) -> list[dict[str, Any]]:
         """List all snapshots."""
         response = self.client.get("/api/dashboard/snapshots")
         response.raise_for_status()
         return response.json()
 
-    def delete_snapshot(self, key: str) -> Dict[str, Any]:
+    def delete_snapshot(self, key: str) -> dict[str, Any]:
         """Delete snapshot by key."""
         response = self.client.delete(f"/api/snapshots/{key}")
         response.raise_for_status()
@@ -266,7 +266,7 @@ class GrafanaClient:
 
     # Health check
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Check cluster health."""
         response = self.client.get("/api/health")
         response.raise_for_status()

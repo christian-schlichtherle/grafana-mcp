@@ -1,7 +1,7 @@
 """Security validation and enforcement for Grafana operations."""
 
 import uuid
-from typing import Dict, Any
+from typing import Any
 
 from ..config import config
 
@@ -10,7 +10,7 @@ class SecurityValidator:
     """Validates and enforces security restrictions for dashboard operations."""
 
     @staticmethod
-    def validate_dashboard_labels(dashboard: Dict[str, Any]) -> bool:
+    def validate_dashboard_labels(dashboard: dict[str, Any]) -> bool:
         """Check if dashboard has all required protection labels."""
         dashboard_tags = dashboard.get("tags", [])
         required_labels = config.labels
@@ -22,7 +22,7 @@ class SecurityValidator:
         return True
 
     @staticmethod
-    def add_protection_labels(dashboard: Dict[str, Any]) -> Dict[str, Any]:
+    def add_protection_labels(dashboard: dict[str, Any]) -> dict[str, Any]:
         """Add protection labels to dashboard."""
         dashboard_copy = dashboard.copy()
 
@@ -60,10 +60,10 @@ class SecurityValidator:
     def generate_dashboard_uid() -> str:
         """Generate a unique dashboard UID."""
         # Generate a UUID and take first 10 characters (Grafana UID format)
-        return str(uuid.uuid4()).replace("-", "")[:10]
+        return uuid.uuid4().hex[:10]
 
     @staticmethod
-    def prepare_dashboard_for_creation(dashboard: Dict[str, Any], folder_uid: str = "") -> Dict[str, Any]:
+    def prepare_dashboard_for_creation(dashboard: dict[str, Any], folder_uid: str = "") -> dict[str, Any]:
         """Prepare dashboard for creation with security requirements."""
         # Validate folder access
         if not SecurityValidator.validate_folder_access(folder_uid):
@@ -82,7 +82,7 @@ class SecurityValidator:
         return dashboard_with_labels
 
     @staticmethod
-    def validate_dashboard_for_modification(dashboard: Dict[str, Any], operation: str) -> None:
+    def validate_dashboard_for_modification(dashboard: dict[str, Any], operation: str) -> None:
         """Validate that a dashboard can be modified (updated or deleted)."""
         if not SecurityValidator.validate_dashboard_labels(dashboard):
             required_labels = ", ".join(config.labels)
@@ -92,7 +92,7 @@ class SecurityValidator:
             )
 
     @staticmethod
-    def prepare_dashboard_for_update(dashboard: Dict[str, Any], folder_uid: str = "") -> Dict[str, Any]:
+    def prepare_dashboard_for_update(dashboard: dict[str, Any], folder_uid: str = "") -> dict[str, Any]:
         """Prepare dashboard for update with security requirements."""
         # Validate folder access
         if not SecurityValidator.validate_folder_access(folder_uid):
@@ -105,11 +105,11 @@ class SecurityValidator:
 
     @staticmethod
     def copy_dashboard_for_creation(
-            source_dashboard: Dict[str, Any],
+            source_dashboard: dict[str, Any],
             new_title: str,
             folder_uid: str = "",
             target_uid: str = ""
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepare a dashboard copy for creation."""
         # Start with the source dashboard
         new_dashboard = source_dashboard.copy()

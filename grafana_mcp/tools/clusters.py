@@ -1,12 +1,12 @@
 """Cluster management tools for Grafana MCP server."""
 
-from typing import Dict, Any, List
+from typing import Any
 
 from .base import grafana_tool, get_current_client
 from ..config import config
 
 
-def list_clusters() -> List[str]:
+def list_clusters() -> list[str]:
     """List all configured Grafana cluster names.
     
     Returns:
@@ -16,7 +16,7 @@ def list_clusters() -> List[str]:
 
 
 @grafana_tool
-def check_cluster_health(cluster: str) -> Dict[str, Any]:
+def check_cluster_health(cluster: str) -> dict[str, Any]:
     """Check the health and connectivity of a Grafana cluster.
     
     Args:
