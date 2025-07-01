@@ -78,7 +78,7 @@ grafana_mcp/
 Tools for discovering and exploring Grafana resources across clusters.
 
 **Cluster Management:**
-- `list_clusters()` - List all configured Grafana clusters with their URLs
+- `list_clusters()` - List all configured Grafana cluster names
 - `check_cluster_health(cluster: str)` - Check health and connectivity of a Grafana cluster
 
 **Search Operations:**

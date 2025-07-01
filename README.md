@@ -30,7 +30,7 @@ python main.py
 Discover and explore Grafana resources across clusters.
 
 #### Cluster Management
-- `list_clusters()` - List all configured Grafana clusters with their URLs
+- `list_clusters()` - List all configured Grafana cluster names
 - `check_cluster_health(cluster: str)` - Check health and connectivity of a Grafana cluster
 
 #### Search Operations
@@ -208,7 +208,7 @@ The server will validate your configuration and start the MCP server, making all
 ```python
 # List all configured clusters
 clusters = list_clusters()
-# Returns: {"localhost": "http://localhost:3000", "prod": "https://grafana.prod.com"}
+# Returns: ["localhost", "prod"]
 
 # Explore folder hierarchy
 root_folders = list_folders("prod")  # List root-level folders
