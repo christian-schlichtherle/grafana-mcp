@@ -23,11 +23,14 @@ class GrafanaConfig:
 
     def __init__(self):
         self._clusters = check_truthy(
-            parse_key_value_pairs(getenv("GRAFANA_CLUSTERS", "localhost=http://localhost:3000")),
-            "GRAFANA_CLUSTERS must not be empty")
-        self._folder = check_truthy(getenv("GRAFANA_FOLDER", "/"), "GRAFANA_FOLDER must not be empty")
-        self._labels = check_truthy(getenv("GRAFANA_LABELS", "MCP").split(), "GRAFANA_LABELS must not be empty")
-        self._tokens = parse_key_value_pairs(getenv("GRAFANA_TOKENS", ""))
+            parse_key_value_pairs(getenv("GRAFANA_CLUSTER_URLS", "localhost=http://localhost:3000")),
+            "GRAFANA_CLUSTER_URLS must not be empty")
+        self._root_folder = check_truthy(getenv("GRAFANA_ROOT_FOLDER", "/"), "GRAFANA_ROOT_FOLDER must not be empty")
+        self._read_access_tags = set(getenv("GRAFANA_READ_ACCESS_TAGS", "").split())
+        self._write_access_tags = check_truthy(
+            set(getenv("GRAFANA_WRITE_ACCESS_TAGS", "MCP").split()),
+            "GRAFANA_WRITE_ACCESS_TAGS must not be empty")
+        self._api_tokens = parse_key_value_pairs(getenv("GRAFANA_API_TOKENS", ""))
 
     @property
     def clusters(self) -> dict[str, str]:
@@ -35,14 +38,19 @@ class GrafanaConfig:
         return self._clusters.copy()
 
     @property
-    def labels(self) -> list[str]:
-        """Get protection labels."""
-        return self._labels.copy()
+    def read_access_tags(self) -> set[str]:
+        """Get read access protection tags."""
+        return self._read_access_tags.copy()
+    
+    @property
+    def write_access_tags(self) -> set[str]:
+        """Get write access protection tags."""
+        return self._write_access_tags.copy()
 
     @property
-    def folder(self) -> str:
-        """Get folder restriction."""
-        return self._folder
+    def root_folder(self) -> str:
+        """Get root folder restriction."""
+        return self._root_folder
 
     def get_cluster_url(self, cluster: str) -> str:
         """Get URL for specified cluster."""
@@ -51,11 +59,11 @@ class GrafanaConfig:
         return self._clusters[cluster]
 
     def get_cluster_token(self, cluster: str) -> str:
-        """Get token for specified cluster.
+        """Get API token for specified cluster.
         
         Returns empty string for unauthenticated clusters.
         """
-        return self._tokens.get(cluster, "")
+        return self._api_tokens.get(cluster, "")
 
     def validate_cluster(self, cluster: str) -> None:
         """Validate that a cluster exists."""

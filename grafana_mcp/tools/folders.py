@@ -3,6 +3,7 @@
 from typing import Any
 
 from .base import grafana_tool, get_current_client
+from ..security.validators import SecurityValidator
 
 
 @grafana_tool
@@ -20,6 +21,11 @@ def list_folders(cluster: str, *, parent_uid: str = "") -> list[dict[str, Any]]:
         ValueError: If cluster is invalid.
     """
     client = get_current_client()
+    
+    # Validate folder access
+    if not SecurityValidator.validate_folder_access(parent_uid):
+        raise ValueError(f"Access denied to folder. Operations restricted to root folder boundary.")
+    
     folders = client.list_folders(parent_uid=parent_uid)
 
     # Return simplified folder information
@@ -58,6 +64,11 @@ def get_folder(cluster: str, folder_uid: str) -> dict[str, Any]:
         ValueError: If cluster is invalid or folder not found.
     """
     client = get_current_client()
+    
+    # Validate folder access
+    if not SecurityValidator.validate_folder_access(folder_uid):
+        raise ValueError(f"Access denied to folder. Operations restricted to root folder boundary.")
+    
     folder = client.get_folder(folder_uid)
     return folder
 
@@ -78,6 +89,11 @@ def create_folder(cluster: str, title: str, *, parent_uid: str = "") -> dict[str
         ValueError: If cluster is invalid or folder creation fails.
     """
     client = get_current_client()
+    
+    # Validate folder access
+    if not SecurityValidator.validate_folder_access(parent_uid):
+        raise ValueError(f"Access denied to folder. Operations restricted to root folder boundary.")
+    
     result = client.create_folder(title=title, parent_uid=parent_uid)
     return result
 
@@ -105,6 +121,11 @@ def update_folder(
         ValueError: If cluster is invalid, folder not found, or update fails.
     """
     client = get_current_client()
+    
+    # Validate folder access
+    if not SecurityValidator.validate_folder_access(folder_uid):
+        raise ValueError(f"Access denied to folder. Operations restricted to root folder boundary.")
+    
     result = client.update_folder(uid=folder_uid, title=title, parent_uid=parent_uid)
     return result
 
@@ -125,5 +146,10 @@ def delete_folder(cluster: str, folder_uid: str, *, force_delete_rules: bool = F
         ValueError: If cluster is invalid, folder not found, or deletion fails.
     """
     client = get_current_client()
+    
+    # Validate folder access
+    if not SecurityValidator.validate_folder_access(folder_uid):
+        raise ValueError(f"Access denied to folder. Operations restricted to root folder boundary.")
+    
     result = client.delete_folder(uid=folder_uid, force_delete_rules=force_delete_rules)
     return result

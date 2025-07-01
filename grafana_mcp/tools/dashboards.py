@@ -58,6 +58,8 @@ def read_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     """
     client = get_current_client()
     result = client.get_dashboard(dashboard_uid)
+    dashboard = result.get("dashboard", {})
+    SecurityValidator.validate_dashboard_for_read(dashboard)
     return result
 
 
@@ -84,8 +86,8 @@ def update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict) -> 
     existing_dashboard = existing.get("dashboard", {})
     existing_meta = existing.get("meta", {})
 
-    # Validate that existing dashboard has protection labels
-    SecurityValidator.validate_dashboard_for_modification(existing_dashboard, "update")
+    # Validate that existing dashboard has protection tags
+    SecurityValidator.validate_dashboard_for_write(existing_dashboard, "update")
 
     # Prepare updated dashboard
     updated_dashboard = dashboard_json.copy()
@@ -98,7 +100,7 @@ def update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict) -> 
     # Get existing folder to preserve it
     existing_folder_uid = existing_meta.get("folderUid", "")
 
-    # Ensure protection labels are maintained
+    # Ensure protection tags are maintained
     prepared_dashboard = SecurityValidator.prepare_dashboard_for_update(updated_dashboard, existing_folder_uid)
 
     # Update the dashboard (preserve existing folder)
@@ -127,8 +129,8 @@ def delete_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     existing = client.get_dashboard(dashboard_uid)
     existing_dashboard = existing.get("dashboard", {})
 
-    # Validate that dashboard has protection labels
-    SecurityValidator.validate_dashboard_for_modification(existing_dashboard, "delete")
+    # Validate that dashboard has protection tags
+    SecurityValidator.validate_dashboard_for_write(existing_dashboard, "delete")
 
     # Delete the dashboard
     result = client.delete_dashboard(dashboard_uid)
@@ -191,7 +193,24 @@ def search(
         limit=limit,
         page=page
     )
-    return result
+    
+    # Filter results based on read access tags
+    filtered_results = []
+    for item in result:
+        if item.get("type") == "dash-db":  # Dashboard
+            try:
+                # Fetch full dashboard to validate tags
+                dashboard_result = client.get_dashboard(item["uid"])
+                dashboard = dashboard_result.get("dashboard", {})
+                SecurityValidator.validate_dashboard_for_read(dashboard)
+                filtered_results.append(item)
+            except ValueError:
+                # Unauthorized - exclude from results
+                continue
+        else:  # Folder or other
+            filtered_results.append(item)
+    
+    return filtered_results
 
 
 
@@ -219,6 +238,9 @@ def inspect_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     
     if not dashboard:
         raise ValueError(f"Dashboard with UID '{dashboard_uid}' not found")
+    
+    # Validate read access
+    SecurityValidator.validate_dashboard_for_read(dashboard)
     
     # Get available datasources for validation
     try:
@@ -400,6 +422,9 @@ def validate_dashboard(cluster: str, dashboard_uid: str) -> dict[str, Any]:
     
     if not dashboard:
         raise ValueError(f"Dashboard with UID '{dashboard_uid}' not found")
+    
+    # Validate read access
+    SecurityValidator.validate_dashboard_for_read(dashboard)
     
     validation_result = {
         "dashboard_uid": dashboard_uid,
@@ -608,6 +633,9 @@ def snapshot_dashboard(
     if not dashboard:
         raise ValueError(f"Dashboard with UID '{dashboard_uid}' not found")
     
+    # Validate read access
+    SecurityValidator.validate_dashboard_for_read(dashboard)
+    
     # Prepare dashboard for snapshot
     snapshot_dashboard = dashboard.copy()
     
@@ -691,12 +719,13 @@ def test_panel_render(
     if height < 100:
         height = 100
     
-    # Verify dashboard exists
+    # Verify dashboard exists and validate read access
     try:
         dashboard_result = client.get_dashboard(dashboard_uid)
         dashboard = dashboard_result.get("dashboard", {})
         if not dashboard:
             raise ValueError(f"Dashboard with UID '{dashboard_uid}' not found")
+        SecurityValidator.validate_dashboard_for_read(dashboard)
     except Exception as e:
         raise ValueError(f"Failed to get dashboard: {str(e)}")
     
@@ -789,6 +818,7 @@ def compare_dashboards(
         result_a = client_a.get_dashboard(dashboard_uid_a)
         dashboard_a = result_a.get("dashboard", {})
         meta_a = result_a.get("meta", {})
+        SecurityValidator.validate_dashboard_for_read(dashboard_a)
     except Exception as e:
         raise ValueError(f"Failed to get dashboard A '{dashboard_uid_a}': {str(e)}")
     
@@ -800,6 +830,7 @@ def compare_dashboards(
                 result_b = client_b.get_dashboard(dashboard_uid_b)
                 dashboard_b = result_b.get("dashboard", {})
                 meta_b = result_b.get("meta", {})
+                SecurityValidator.validate_dashboard_for_read(dashboard_b)
             except Exception as e:
                 raise ValueError(f"Failed to get dashboard B '{dashboard_uid_b}' from cluster '{compare_cluster_b}': {str(e)}")
     else:
@@ -807,6 +838,7 @@ def compare_dashboards(
             result_b = client_a.get_dashboard(dashboard_uid_b)
             dashboard_b = result_b.get("dashboard", {})
             meta_b = result_b.get("meta", {})
+            SecurityValidator.validate_dashboard_for_read(dashboard_b)
         except Exception as e:
             raise ValueError(f"Failed to get dashboard B '{dashboard_uid_b}': {str(e)}")
     
@@ -1052,14 +1084,14 @@ def copy_dashboard(
                 pass
         
         if existing_dashboard:
-            # Dashboard exists - validate security labels and update
-            SecurityValidator.validate_dashboard_for_modification(existing_dashboard, "update")
+            # Dashboard exists - validate security tags and update
+            SecurityValidator.validate_dashboard_for_write(existing_dashboard, "update")
             
             # Maintain version for update
             if "version" in existing_dashboard:
                 new_dashboard["version"] = existing_dashboard["version"]
             
-            # Ensure protection labels are maintained
+            # Ensure protection tags are maintained
             prepared_dashboard = SecurityValidator.prepare_dashboard_for_update(new_dashboard, target_folder_uid)
             result = target_client.update_dashboard(prepared_dashboard, target_folder_uid)
         else:

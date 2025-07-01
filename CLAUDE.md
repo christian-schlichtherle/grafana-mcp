@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository provides a fully implemented MCP (Model Context Protocol) server for CRUD operations on Grafana dashboards with label-based protection. The MCP server:
+This repository provides a fully implemented MCP (Model Context Protocol) server for CRUD operations on Grafana dashboards with comprehensive tag-based security. The MCP server:
 
-- Labels created dashboards to mark itself as the origin
-- Only allows updates/deletes on dashboards with matching labels  
-- Provides unrestricted read access by default to allow copying existing dashboards
-- Supports folder-based access restrictions (defaults to root folder `/`)
+- Tags created dashboards to mark itself as the origin
+- Implements dual security: separate tag requirements for read vs write operations
+- Provides stealth security where unauthorized resources become invisible (404-like behavior)
+- Supports chroot-style folder access restrictions for complete isolation
 - Supports multi-cluster Grafana configurations
 - Uses FastMCP framework for MCP tool implementation
+- Uses efficient set-based tag operations for optimal performance
 
 ## Dependencies and Environment
 
@@ -25,24 +26,27 @@ Dependency management is handled by `uv` (based on presence of `uv.lock`).
 
 The MCP server is configured via environment variables:
 
-- `GRAFANA_CLUSTERS` - Space-separated key=value pairs defining cluster URLs
-- `GRAFANA_TOKENS` - Space-separated key=value pairs defining cluster API tokens (optional)
-- `GRAFANA_LABELS` - Space-separated list of labels for dashboard protection (defaults to "MCP")
-- `GRAFANA_FOLDER` - Folder path restriction for operations (defaults to "/")
+- `GRAFANA_CLUSTER_URLS` - Space-separated key=value pairs defining cluster URLs
+- `GRAFANA_API_TOKENS` - Space-separated key=value pairs defining cluster API tokens (optional)
+- `GRAFANA_READ_ACCESS_TAGS` - Space-separated set of tags required for read access (defaults to empty = unrestricted)
+- `GRAFANA_WRITE_ACCESS_TAGS` - Space-separated set of tags required for write access (defaults to "MCP")
+- `GRAFANA_ROOT_FOLDER` - Root folder path acting as access boundary (defaults to "/")
 
 Examples:
 ```bash
 # Local development without authentication
-export GRAFANA_CLUSTERS="localhost=http://localhost:3000"
-# No GRAFANA_TOKENS needed
+export GRAFANA_CLUSTER_URLS="localhost=http://localhost:3000"
 
 # Mixed environment (local without auth, prod with auth)
-export GRAFANA_CLUSTERS="localhost=http://localhost:3000 prod=https://grafana.prod.com"
-export GRAFANA_TOKENS="prod=glsa_def456"  # Only prod needs token
+export GRAFANA_CLUSTER_URLS="localhost=http://localhost:3000 prod=https://grafana.prod.com"
+export GRAFANA_API_TOKENS="prod=glsa_def456"
 
-# All clusters with authentication
-export GRAFANA_CLUSTERS="dev=https://grafana.dev.com prod=https://grafana.prod.com"
-export GRAFANA_TOKENS="dev=glsa_abc123 prod=glsa_def456"
+# All clusters with authentication and security restrictions
+export GRAFANA_CLUSTER_URLS="dev=https://grafana.dev.com prod=https://grafana.prod.com"
+export GRAFANA_API_TOKENS="dev=glsa_abc123 prod=glsa_def456"
+export GRAFANA_READ_ACCESS_TAGS="MCP AI_GENERATED"
+export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED"
+export GRAFANA_ROOT_FOLDER="/mcp-managed"
 ```
 
 ## Development Commands
@@ -68,7 +72,7 @@ grafana_mcp/
 │   └── datasources.py     # Datasource tools
 └── security/
     ├── __init__.py
-    └── validators.py      # Label and folder validation
+    └── validators.py      # Tag and folder validation
 ```
 
 ### Available MCP Tools
@@ -85,8 +89,8 @@ Tools for discovering and exploring Grafana resources across clusters.
 - `search(cluster: str, *, query: str = "", tags: list = [], starred: bool = False, folder_uids: list = [], dashboard_uids: list = [], dashboard_ids: list = [], type: str = "", limit: int = 1000, page: int = 1)` - Search dashboards and folders with comprehensive filtering options
 
 **Dashboard Discovery:**
-- `read_dashboard(cluster: str, dashboard_uid: str)` - Read dashboard configuration and metadata (unrestricted access)
-- `inspect_dashboard(cluster: str, dashboard_uid: str)` - Detailed structural analysis including panels, datasources, variables, layout, and validation issues
+- `read_dashboard(cluster: str, dashboard_uid: str)` - Read dashboard configuration and metadata (subject to read access tags)
+- `inspect_dashboard(cluster: str, dashboard_uid: str)` - Detailed structural analysis including panels, datasources, variables, layout, and validation issues (subject to read access tags)
 
 **Folder Discovery:**
 - `list_folders(cluster: str, *, parent_uid: str = "")` - List folders with metadata, optionally under a parent folder
@@ -97,12 +101,12 @@ Tools for discovering and exploring Grafana resources across clusters.
 
 #### Editing
 
-Tools for creating, modifying, and managing Grafana resources with label-based security controls.
+Tools for creating, modifying, and managing Grafana resources with tag-based security controls.
 
 **Dashboard Management:**
-- `create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "")` - Create dashboard with automatic protection labels and folder assignment
-- `update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict)` - Update existing dashboard (requires protection labels)
-- `delete_dashboard(cluster: str, dashboard_uid: str)` - Delete dashboard (requires protection labels)
+- `create_dashboard(cluster: str, dashboard_json: dict, *, folder_uid: str = "")` - Create dashboard with automatic protection tags and folder assignment
+- `update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict)` - Update existing dashboard (requires protection tags)
+- `delete_dashboard(cluster: str, dashboard_uid: str)` - Delete dashboard (requires protection tags)
 - `copy_dashboard(source_cluster: str, source_uid: str, new_title: str, *, target_cluster: str = "", folder_uid: str = "", target_uid: str = "")` - Copy dashboard with intelligent UID handling, auto-overwrite, and folder preservation
 
 **Folder Management:**
@@ -149,14 +153,15 @@ Tools for validating, testing, and analyzing dashboard quality and data accuracy
 7. **Cross-Cluster Dashboard Copying**: Advanced `copy_dashboard()` tool with intelligent UID handling and auto-overwrite:
    - **Same-cluster copying**: Generates new UID automatically (unless explicit `target_uid` provided)
    - **Cross-cluster copying**: Preserves source UID by default (for consistent deployment)
-   - **Auto-overwrite**: When target dashboard exists, validates security labels and updates automatically
+   - **Auto-overwrite**: When target dashboard exists, validates security tags and updates automatically
    - **Explicit control**: Optional `target_uid` parameter overrides all default behavior
    - **Stateless operation**: All operations require explicit cluster parameter
    - **Folder inheritance**: Automatically inherits source folder unless overridden
 
 8. **Security Model**: 
-   - Auto-adds protection labels to created/copied dashboards
-   - Validates labels before allowing updates/deletes
+   - Auto-adds protection tags to created/copied dashboards
+   - Validates tags before allowing updates/deletes
+   - Implements dual read/write security with stealth mode
    - Prevents dashboard overwrites during creation
 
 9. **Error Handling**: Comprehensive validation with helpful error messages, including HTTP status code translation
@@ -166,18 +171,54 @@ Tools for validating, testing, and analyzing dashboard quality and data accuracy
 ### Authentication
 
 - **Optional Authentication**: Clusters can run with or without authentication
-- **Service Account Tokens**: For authenticated clusters, uses Bearer tokens via `GRAFANA_TOKENS`
+- **Service Account Tokens**: For authenticated clusters, uses Bearer tokens via `GRAFANA_API_TOKENS`
 - **Local Development**: Supports unauthenticated Grafana instances (common in Docker containers)
 - **Mixed Environments**: Can have both authenticated and unauthenticated clusters configured simultaneously
 - **Automatic Detection**: HTTP client automatically includes/excludes Authorization header based on token presence
 
 ### Security Features
 
-- Label-based access control for modifications
-- Folder-based operation restrictions
+- Tag-based access control for both read and write operations
+- Chroot-style folder access restrictions 
+- Stealth mode for unauthorized resource access
 - UID collision prevention
-- Automatic protection label injection
-- Validation of dashboard permissions before operations
+- Automatic protection tag injection
+- Set-based tag validation for optimal performance
+
+## Security Model
+
+### Tag-Based Access Control
+The MCP server implements comprehensive tag-based security for both read and write operations using set-based tag matching:
+
+**Read Protection:**
+- Controlled by `GRAFANA_READ_ACCESS_TAGS` environment variable
+- Default: Empty set (unrestricted read access)
+- When set: Resource must contain ALL specified tags to be accessible
+- Unauthorized resources return 404 errors and are excluded from search results
+
+**Write Protection:**
+- Controlled by `GRAFANA_WRITE_ACCESS_TAGS` environment variable  
+- Default: {"MCP"}
+- Must not be empty - at least one tag is required
+- Resources must contain ALL specified tags to be modified
+- Created/copied dashboards automatically receive protection tags
+
+### Folder-Based Access Control (Chroot-style)
+The `GRAFANA_ROOT_FOLDER` environment variable acts as a chroot-style access boundary:
+
+- **Default**: "/" (unrestricted access to all folders)
+- **Restricted**: "/mcp-managed" - only allows access to the "mcp-managed" folder and its subfolders
+- **Behavior**: Like Unix chroot, the MCP server cannot access anything outside this folder tree
+- **Applies to**: All dashboard and folder operations (read and write)
+- **Security**: Prevents access to folders outside the designated boundary
+
+### Security Behavior
+- **Stealth Mode**: Unauthorized resources become invisible (simulate 404)
+- **Search Filtering**: Results exclude unauthorized dashboards
+- **Complete Coverage**: All read and write operations are protected
+- **Tag Inheritance**: Created resources automatically get protection tags
+- **Folder Isolation**: Operations restricted to root folder boundary
+- **Set-based Matching**: Efficient tag validation using set operations
 
 ## Dashboard Testing and Validation Workflow
 
