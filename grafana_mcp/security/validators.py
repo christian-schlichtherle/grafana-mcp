@@ -98,6 +98,9 @@ class SecurityValidator:
         # Ensure protection tags are maintained
         dashboard_with_tags = SecurityValidator.add_protection_tags(dashboard)
 
+        # Let Grafana handle version management automatically
+        dashboard_with_tags.pop("version", None)
+
         return dashboard_with_tags
 
     @staticmethod

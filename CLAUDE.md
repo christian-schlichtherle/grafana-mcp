@@ -175,6 +175,12 @@ Tools for validating, testing, and analyzing dashboard quality and data accuracy
 
 10. **HTTP Client**: Context manager pattern with proper connection management
 
+11. **Automatic Version Management**: Dashboard version handling is delegated to Grafana's API:
+   - Version fields are removed from all dashboard operations (create, update, copy)
+   - Grafana automatically increments versions during updates with `overwrite: true`
+   - Eliminates manual version tracking complexity and prevents version conflicts
+   - Ensures optimal concurrency control through Grafana's built-in version management
+
 ### Authentication
 
 - **Optional Authentication**: Clusters can run with or without authentication

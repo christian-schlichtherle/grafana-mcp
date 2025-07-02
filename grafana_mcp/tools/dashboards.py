@@ -93,10 +93,6 @@ def update_dashboard(cluster: str, dashboard_uid: str, dashboard_json: dict) -> 
     updated_dashboard = dashboard_json.copy()
     updated_dashboard["uid"] = dashboard_uid
 
-    # Maintain version for update
-    if "version" in existing_dashboard:
-        updated_dashboard["version"] = existing_dashboard["version"]
-
     # Get existing folder to preserve it
     existing_folder_uid = existing_meta.get("folderUid", "")
 
@@ -1086,10 +1082,6 @@ def copy_dashboard(
         if existing_dashboard:
             # Dashboard exists - validate security tags and update
             SecurityValidator.validate_dashboard_for_write(existing_dashboard, "update")
-            
-            # Maintain version for update
-            if "version" in existing_dashboard:
-                new_dashboard["version"] = existing_dashboard["version"]
             
             # Ensure protection tags are maintained
             prepared_dashboard = SecurityValidator.prepare_dashboard_for_update(new_dashboard, target_folder_uid)
