@@ -31,6 +31,15 @@ class GrafanaConfig:
             set(getenv("GRAFANA_WRITE_ACCESS_TAGS", "MCP").split()),
             "GRAFANA_WRITE_ACCESS_TAGS must not be empty")
         self._api_tokens = parse_key_value_pairs(getenv("GRAFANA_API_TOKENS", ""))
+        
+        # Validate that read access tags are a subset of write access tags
+        if not self._read_access_tags.issubset(self._write_access_tags):
+            read_only_tags = self._read_access_tags - self._write_access_tags
+            raise ValueError(
+                f"GRAFANA_READ_ACCESS_TAGS must be a subset of GRAFANA_WRITE_ACCESS_TAGS. "
+                f"Tags in read but not in write: {sorted(read_only_tags)}. "
+                f"Either remove these tags from GRAFANA_READ_ACCESS_TAGS or add them to GRAFANA_WRITE_ACCESS_TAGS."
+            )
 
     @property
     def clusters(self) -> dict[str, str]:

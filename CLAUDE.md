@@ -41,11 +41,18 @@ export GRAFANA_CLUSTER_URLS="localhost=http://localhost:3000"
 export GRAFANA_CLUSTER_URLS="localhost=http://localhost:3000 prod=https://grafana.prod.com"
 export GRAFANA_API_TOKENS="prod=glsa_def456"
 
-# All clusters with authentication and security restrictions
+# Security restrictions with equal read/write tags (most restrictive)
 export GRAFANA_CLUSTER_URLS="dev=https://grafana.dev.com prod=https://grafana.prod.com"
 export GRAFANA_API_TOKENS="dev=glsa_abc123 prod=glsa_def456"
 export GRAFANA_READ_ACCESS_TAGS="MCP AI_GENERATED"
 export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED"
+export GRAFANA_ROOT_FOLDER="/mcp-managed"
+
+# Partial read restrictions (read ⊆ write, allows reading some external dashboards)
+export GRAFANA_CLUSTER_URLS="dev=https://grafana.dev.com prod=https://grafana.prod.com"
+export GRAFANA_API_TOKENS="dev=glsa_abc123 prod=glsa_def456"
+export GRAFANA_READ_ACCESS_TAGS="MCP"
+export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED CUSTOM"
 export GRAFANA_ROOT_FOLDER="/mcp-managed"
 ```
 
@@ -202,6 +209,12 @@ The MCP server implements comprehensive tag-based security for both read and wri
 - Must not be empty - at least one tag is required
 - Resources must contain ALL specified tags to be modified
 - Created/copied dashboards automatically receive protection tags
+
+**Critical Configuration Requirement:**
+- `GRAFANA_READ_ACCESS_TAGS` must be a subset of `GRAFANA_WRITE_ACCESS_TAGS`
+- This ensures the MCP server can read dashboards it creates
+- The server validates this at startup and will fail with a clear error message if violated
+- Example: If write tags are `"MCP AI_GENERATED"`, read tags can be `""`, `"MCP"`, `"AI_GENERATED"`, or `"MCP AI_GENERATED"`
 
 ### Folder-Based Access Control (Chroot-style)
 The `GRAFANA_ROOT_FOLDER` environment variable acts as a chroot-style access boundary:
@@ -398,6 +411,48 @@ if diff['summary']['total_differences'] > 0:
 - **Cross-cluster authentication**: Ensure all clusters have proper authentication configured
 
 This comprehensive testing workflow provides the visibility and validation needed for confident dashboard development and deployment while respecting Grafana's architecture and security model.
+
+## Troubleshooting
+
+### Configuration Issues
+
+**"GRAFANA_READ_ACCESS_TAGS must be a subset of GRAFANA_WRITE_ACCESS_TAGS" Error**
+
+This error occurs when read access tags contain tags not present in write access tags.
+
+```bash
+# ❌ Invalid configuration (will fail at startup)
+export GRAFANA_READ_ACCESS_TAGS="MCP AI_GENERATED CUSTOM"
+export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED"
+
+# ✅ Valid configurations
+export GRAFANA_READ_ACCESS_TAGS=""  # No read restrictions
+export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED"
+
+export GRAFANA_READ_ACCESS_TAGS="MCP"  # Subset of write tags
+export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED"
+
+export GRAFANA_READ_ACCESS_TAGS="MCP AI_GENERATED"  # Equal sets
+export GRAFANA_WRITE_ACCESS_TAGS="MCP AI_GENERATED"
+```
+
+**Solution:**
+- Remove extra tags from `GRAFANA_READ_ACCESS_TAGS`, or
+- Add missing tags to `GRAFANA_WRITE_ACCESS_TAGS`
+
+**"Dashboard not found" for Recently Created Dashboards**
+
+This typically indicates a tag configuration mismatch where the MCP server created a dashboard but cannot read it back.
+
+**Causes:**
+- Modified tag configuration after dashboard creation
+- Manual tag removal from dashboards
+- Incorrect tag configuration (should be caught by startup validation now)
+
+**Solution:**
+- Verify current tag configuration is valid
+- Check dashboard tags in Grafana UI match expected security requirements
+- Recreate problematic dashboards with current configuration
 
 ## Development Principles
 
